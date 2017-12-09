@@ -19,10 +19,12 @@
     @property NSMutableArray *topToBottomDiagnolValues;
     @property BOOL completedCornersChecked;
     @property NSMutableArray *cornerValues;
+    @property BOOL isBuildingGrid;
     @property int dimensions;
     @property (nonatomic) NSMutableArray *gameArray;
     @property (nonatomic) UIView *gameView;
     @property (nonatomic) int gridLength;
+    @property (nonatomic) UIButton* makeNewGameButton;
     @property (nonatomic) int playCount;
     @property (weak, nonatomic) IBOutlet UIImageView *currentPlayerImage;
     @property (weak, nonatomic) IBOutlet UILabel *currentPlayerLabel;
@@ -39,6 +41,8 @@
     [super viewDidLoad];
     self.dimensions = kLevelInt;
     self.dimensionTextField.text = [NSString stringWithFormat: @"%d" , self.dimensions];
+    
+    self.isBuildingGrid = NO;
     
     self.gridLength = self.view.frame.size.width - kGridInset - kGridInset; //left and right insets
     [self addObserver:self forKeyPath:@"playCount" options:NSKeyValueObservingOptionOld context:nil];
@@ -58,6 +62,7 @@
     
     [self makeTicTacToeGame];
     
+    [self newGameButton];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -108,6 +113,42 @@
     [self dimensionTextAsInt];
 }
 
+-(void)textFieldDidBeginEditing:(UITextField *)textField
+{
+    self.makeNewGameButton.hidden = YES;
+    
+    [UIView beginAnimations:nil context:nil];
+    [UIView setAnimationDuration:.3];
+    [UIView setAnimationBeginsFromCurrentState:TRUE];
+    self.view.frame = CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y -258, self.view.frame.size.width, self.view.frame.size.height);
+    
+    self.gameView.center = self.view.center;
+    
+    [UIView commitAnimations];
+    
+    
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    [self.dimensionTextField resignFirstResponder];
+    return NO;
+}
+
+
+-(void)textFieldDidEndEditing:(UITextField *)textField
+{
+    self.makeNewGameButton.hidden = NO;
+    
+    [UIView beginAnimations:nil context:nil];
+    [UIView setAnimationDuration:.3];
+    [UIView setAnimationBeginsFromCurrentState:TRUE];
+    self.view.frame = CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y +258, self.view.frame.size.width, self.view.frame.size.height);
+    
+    self.gameView.center = self.view.center;
+    
+    [UIView commitAnimations];
+    
+}
 //MARK: Drawings
 
 - (void) drawCircleUsingFrame:(CGRect)frame {
@@ -295,6 +336,13 @@
 }
 
 - (void) updatePlayerImage {
+    CATransition *transition = [CATransition animation];
+    transition.duration = 0.25;
+    transition.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    transition.type = kCATransitionFade;
+    transition.delegate = self;
+    [self.view.layer addAnimation:transition forKey:nil];
+    
     if (self.playCount % kTwo == kZero) {
         self.currentPlayerImage.image = [UIImage imageNamed:kOImageName];
     } else {
@@ -312,11 +360,11 @@
     self.gameView.transform = CGAffineTransformIdentity;
     
     self.bottomToTopDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
-    self.completedBottomToTopDiagnolChecked = false;
+    self.completedBottomToTopDiagnolChecked = NO;
     self.topToBottomDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
-    self.completedTopToBottomDiagnolChecked = false;
+    self.completedTopToBottomDiagnolChecked = NO;
     self.cornerValues = [[NSMutableArray alloc] initWithCapacity:kFour];
-    self.completedCornersChecked = false;
+    self.completedCornersChecked = NO;
     self.gameArray = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
     
     self.playCount = arc4random() % kTwo;
@@ -324,15 +372,19 @@
     self.currentPlayerLabel.text = @"Current Player:";
     [self.currentPlayerLabel setTextColor:UIColor.blackColor];
     
-    [self makeNewGameButton];
+    self.isBuildingGrid = YES;
+    
     int counter = kZero;
     for (int lineNumber = kOne; lineNumber < self.dimensions; lineNumber++) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (counter++ * kGridLineAnimationDuration) * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [self drawVerticalGridLine:lineNumber];
         });
-        
+        __weak typeof (self) weakSelf = self;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (counter++ * kGridLineAnimationDuration) * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [self drawHorizontalGridLine:lineNumber];
+            if (lineNumber == weakSelf.dimensions - 1) {
+                weakSelf.isBuildingGrid = NO;
+            }
         });
     }
     
@@ -376,20 +428,20 @@
 }
 
 
-- (void) makeNewGameButton {
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    [button addTarget:self
+- (void) newGameButton {
+    self.makeNewGameButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [self.makeNewGameButton addTarget:self
                action:@selector(newGame:)
      forControlEvents:UIControlEventTouchUpInside];
-    button.frame = CGRectMake(kGridInset, [UIScreen mainScreen].bounds.size.height - 125, [UIScreen mainScreen].bounds.size.width - kGridInset * 2, 30);
-    button.layer.cornerRadius = 10;
-    button.hidden = NO;
-    [button.layer setBorderWidth:3.0];
-    [button.layer setBorderColor:[[UIColor blackColor] CGColor]];
-    [button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    self.makeNewGameButton.frame = CGRectMake(kGridInset, [UIScreen mainScreen].bounds.size.height - 125, [UIScreen mainScreen].bounds.size.width - kGridInset * 2, 30);
+    self.makeNewGameButton.layer.cornerRadius = 10;
+    self.makeNewGameButton.hidden = NO;
+    [self.makeNewGameButton.layer setBorderWidth:3.0];
+    [self.makeNewGameButton.layer setBorderColor:[[UIColor blackColor] CGColor]];
+    [self.makeNewGameButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     
-    [button setTitle:@"New Game" forState:UIControlStateNormal];
-    [self.view addSubview:button];
+    [self.makeNewGameButton setTitle:@"New Game" forState:UIControlStateNormal];
+    [self.view addSubview:self.makeNewGameButton];
 }
 
 - (void) newGame:(UIButton *)sender {
@@ -513,7 +565,7 @@
     
     for (UIView * view in self.gameView.subviews) {
         if ([view.restorationIdentifier isEqualToString:kGameButtonID]) {
-            view.userInteractionEnabled = false;
+            view.userInteractionEnabled = NO;
         }
     }
     for (int i = 0.0; i < 1000.0; i += 2) {
@@ -582,7 +634,7 @@ float startY = 0;
 }
 - (void) touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event{
     UITouch *touch = [[event allTouches] anyObject];
-    if( [touch view] == self.gameView)
+    if( [touch view] == self.gameView && !self.isBuildingGrid)
     {
         CGPoint location = [touch locationInView:self.view];
         location.x =location.x - startX;

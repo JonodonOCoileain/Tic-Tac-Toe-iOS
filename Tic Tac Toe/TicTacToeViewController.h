@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-@interface TicTacToeViewController : UIViewController <UITextFieldDelegate>
+@interface TicTacToeViewController : UIViewController <UITextFieldDelegate, CAAnimationDelegate>
 
 
 @end
