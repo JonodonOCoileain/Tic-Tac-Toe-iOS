@@ -6,115 +6,115 @@
 //  Copyright © 2017 JC. All rights reserved.
 //
 
-#import "ViewController.h"
+#import "TicTacToeViewController.h"
 #import <QuartzCore/QuartzCore.h>
 #import "TicTacToeConstants.h"
+#import "TicTacToeButton.h"
 
-@interface ViewController ()
+@interface TicTacToeViewController ()
+    //MARK: Properties
+    @property BOOL completedBottomToTopDiagnolChecked;
+    @property NSMutableArray *bottomToTopDiagnolValues;
+    @property BOOL completedTopToBottomDiagnolChecked;
+    @property NSMutableArray *topToBottomDiagnolValues;
+    @property BOOL completedCornersChecked;
+    @property NSMutableArray *cornerValues;
+    @property int dimensions;
+    @property (nonatomic) NSMutableArray *gameArray;
+    @property (nonatomic) UIView *gameView;
     @property (nonatomic) int gridLength;
     @property (nonatomic) int playCount;
+    @property (weak, nonatomic) IBOutlet UIImageView *currentPlayerImage;
+    @property (weak, nonatomic) IBOutlet UILabel *currentPlayerLabel;
+@property (weak, nonatomic) IBOutlet UITextField *dimensionTextField;
+@property (weak, nonatomic) IBOutlet UIStackView *dimensionStackView;
+
 @end
 
-@implementation ViewController
+@implementation TicTacToeViewController
 
-
+//MARK: View Did Load
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.gridLength = self.view.frame.size.width - kOffset - kOffset;
-
-    [self makeGame];
+    self.dimensions = kLevelInt;
+    self.dimensionTextField.text = [NSString stringWithFormat: @"%d" , self.dimensions];
+    
+    self.gridLength = self.view.frame.size.width - kGridInset - kGridInset; //left and right insets
+    [self addObserver:self forKeyPath:@"playCount" options:NSKeyValueObservingOptionOld context:nil];
+    
+    self.gameView = [[UIView alloc] initWithFrame:self.view.frame];
+    self.gameView.opaque = NO;
+    
+    UIPinchGestureRecognizer *twoFingerPinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(twoFingerPinch:)];
+    
+    [[self gameView] addGestureRecognizer:twoFingerPinchRecognizer];
+    
+    [self.view insertSubview:self.gameView belowSubview: self.dimensionStackView];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(resignFirstResponderOfDimensionTextField)];
+    
+    [self.view addGestureRecognizer:tap];
+    
+    [self makeTicTacToeGame];
+    
 }
-
-- (void) makeGame {
-    self.playCount = 0;
-    [self makeNewGameButton];
-    for (int x = 0; x < kLevel; x++) {
-        for (int l = 1; l < kLevel; l++) {
-            [self drawVerticalGridLine:l];
-            [self drawHorizontalGridLine:l];
-        }
-        for (int y = 0; y < kLevel; y++) {
-            [self makePlayButtonAt:x And:y];
-        }
-    }
-}
-
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
 
-- (void) makePlayButtonAt:(int)x And:(int) y {
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-    [button addTarget:self
-               action:@selector(buttonTapped:)
-     forControlEvents:UIControlEventTouchUpInside];
-    button.frame = CGRectMake(x/kLevel * self.gridLength + kOffset, y/kLevel * self.gridLength + (self.view.center.y - self.gridLength/2), self.gridLength/kLevel, self.gridLength/kLevel);
-    [self.view addSubview:button];
-}
-
-- (void) drawVerticalGridLine:(int)l {
-    UIBezierPath *path = [UIBezierPath bezierPath];
-    int xCoordinate = (self.gridLength) * l / kLevel + kOffset;
-    [path moveToPoint:CGPointMake(xCoordinate, self.view.center.y - self.gridLength/2)];
-    [path addLineToPoint:CGPointMake(xCoordinate, self.view.center.y + self.gridLength/2)];
-    
-    CAShapeLayer *pathLayer = [CAShapeLayer layer];
-    pathLayer.frame = self.view.bounds;
-    pathLayer.path = path.CGPath;
-    pathLayer.strokeColor = [[UIColor blackColor] CGColor];
-    pathLayer.fillColor = nil;
-    pathLayer.lineWidth = kGridLineWidth;
-    pathLayer.lineJoin = kCALineJoinBevel;
-    
-    [self.view.layer addSublayer:pathLayer];
-    
-    CABasicAnimation *pathAnimation = [CABasicAnimation animationWithKeyPath:kLine1Key];
-    pathAnimation.duration = kAnimationDuration;
-    pathAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-    pathAnimation.toValue = [NSNumber numberWithFloat:1.0f];
-    [pathLayer addAnimation:pathAnimation forKey:kLine1Key];
-}
-
-- (void) drawHorizontalGridLine:(int)l {
-    UIBezierPath *path = [UIBezierPath bezierPath];
-    int yCoordinate = (self.view.center.y - self.gridLength/2) + (self.gridLength * l / kLevel);
-    [path moveToPoint:CGPointMake(kOffset, yCoordinate)];
-    [path addLineToPoint:CGPointMake(kOffset + self.gridLength, yCoordinate)];
-    
-    CAShapeLayer *pathLayer = [CAShapeLayer layer];
-    pathLayer.frame = self.view.bounds;
-    pathLayer.path = path.CGPath;
-    pathLayer.strokeColor = [[UIColor blackColor] CGColor];
-    pathLayer.fillColor = nil;
-    pathLayer.lineWidth = kGridLineWidth;
-    pathLayer.lineJoin = kCALineJoinBevel;
-    
-    [self.view.layer addSublayer:pathLayer];
-    
-    CABasicAnimation *pathAnimation = [CABasicAnimation animationWithKeyPath:kLine1Key];
-    pathAnimation.duration = kAnimationDuration;
-    pathAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-    pathAnimation.toValue = [NSNumber numberWithFloat:1.0f];
-    [pathLayer addAnimation:pathAnimation forKey:kLine1Key];
-}
-
-- (void) buttonTapped:(UIButton *) sender {
-    if (self.playCount % 2 == 0) {
-        [self drawCircleUsingFrame:sender.frame];
-    } else {
-        [self drawXUsingFrame:sender.frame];
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+    if ([keyPath isEqualToString: @"playCount"]) {
+        [self updatePlayerImage];
     }
-    self.playCount += 1;
-    sender.enabled = NO;
 }
+
+//MARK: Custom Dimension Handlers
+
+- (int) dimensionTextAsInt {
+    int dimensionTextFieldStringToInt = [self.dimensionTextField.text intValue];
+    if (dimensionTextFieldStringToInt > kMinimumDimension) {
+        return dimensionTextFieldStringToInt;
+    } else {
+        UIAlertController* alert = [UIAlertController alertControllerWithTitle:kDimensionTitle
+                                                                       message:kDimensionMessage
+                                                                preferredStyle:UIAlertControllerStyleAlert];
+        
+        UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:kOK style:UIAlertActionStyleDefault
+                                                              handler:^(UIAlertAction * action) {}];
+        
+        [alert addAction:defaultAction];
+        [self presentViewController:alert animated:YES completion:nil];
+        
+        self.dimensionTextField.text = kFourString;
+        
+        return kFour;
+    }
+}
+
+- (IBAction)dimensionEditingDidEnd:(UITextField *)sender {
+    [self dimensionTextAsInt];
+}
+- (IBAction)dimensionTextFieldDidBeginEditing:(UITextField *)sender {
+}
+
+- (void) resignFirstResponderOfDimensionTextField
+{
+    [self.dimensionTextField resignFirstResponder];
+    
+    [self dimensionTextAsInt];
+}
+
+//MARK: Drawings
 
 - (void) drawCircleUsingFrame:(CGRect)frame {
-    int radius = self.gridLength/kLevel/4;
-    int strokeWidth = kGridLineWidth;
+    int radius = self.gridLength/((float) self.dimensions)/4;
+    int strokeWidth = kXAndOLineWidth / log(self.dimensions);
     CGColorRef color = [UIColor blueColor].CGColor;
+    
     
     CGFloat startAngle = 0;
     CGFloat endAngle = 1;
@@ -129,79 +129,466 @@
     circle.strokeColor = color;
     circle.lineWidth = strokeWidth;
     
-    [self.view.layer addSublayer:circle];
-    // Change the model layer's property first.
+    [self.gameView.layer addSublayer:circle];
     circle.strokeEnd = endAngle;
     
-    // Then apply the animation.
-    CABasicAnimation *drawAnimation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    CABasicAnimation *drawAnimation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
     drawAnimation.duration  = kAnimationDuration;
     drawAnimation.fromValue = [NSNumber numberWithFloat:startAngle];
     drawAnimation.toValue   = [NSNumber numberWithFloat:endAngle];
+    
     drawAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-    [circle addAnimation:drawAnimation forKey:@"drawCircleAnimation"];
+    [circle addAnimation:drawAnimation forKey:kDrawCircleAnimation];
 }
 
 - (void) drawXUsingFrame:(CGRect)frame {
     UIBezierPath *path1 = [UIBezierPath bezierPath];
-
-    [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height/4.0)];
-    [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
-    
+    if (rand() % 2 == 0) {
+        [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height/4.0)];
+        [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
+    } else {
+        [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
+        [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height/4.0)];
+    }
     CAShapeLayer *path1Layer = [CAShapeLayer layer];
-    path1Layer.frame = self.view.bounds;
-    path1Layer.path = path1.CGPath;
+    path1Layer.frame = self.gameView.bounds;
     path1Layer.strokeColor = [[UIColor redColor] CGColor];
     path1Layer.fillColor = nil;
-    path1Layer.lineWidth = kGridLineWidth;
+    path1Layer.lineWidth = kXAndOLineWidth / log(self.dimensions);
     path1Layer.lineJoin = kCALineJoinBevel;
     
-    [self.view.layer addSublayer:path1Layer];
+    [self.gameView.layer addSublayer:path1Layer];
     
-    CABasicAnimation *path1Animation = [CABasicAnimation animationWithKeyPath:kLine1Key];
-    path1Animation.duration = kAnimationDuration;
+    CABasicAnimation *path1Animation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
+    path1Animation.duration = kAnimationDuration/2.0; //half of X is drawn in half the time of a circle
     path1Animation.fromValue = [NSNumber numberWithFloat:0.0f];
     path1Animation.toValue = [NSNumber numberWithFloat:1.0f];
-    [path1Layer addAnimation:path1Animation forKey:kLine1Key];
+    [path1Layer addAnimation:path1Animation forKey:kDrawLineAnimation];
+    path1Layer.path = path1.CGPath;
     
-    UIBezierPath *path2 = [UIBezierPath bezierPath];
-    
-    [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height/4.0)];
-    [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
-    
-    CAShapeLayer *path2Layer = [CAShapeLayer layer];
-    path2Layer.frame = self.view.bounds;
-    path2Layer.path = path2.CGPath;
-    path2Layer.strokeColor = [[UIColor redColor] CGColor];
-    path2Layer.fillColor = nil;
-    path2Layer.lineWidth = kGridLineWidth;
-    path2Layer.lineJoin = kCALineJoinBevel;
-    
-    [self.view.layer addSublayer:path2Layer];
-    
-    CABasicAnimation *path2Animation = [CABasicAnimation animationWithKeyPath:kLine2Key];
-    path2Animation.duration = kAnimationDuration;
-    path2Animation.fromValue = [NSNumber numberWithFloat:0.0f];
-    path2Animation.toValue = [NSNumber numberWithFloat:1.0f];
-    [path2Layer addAnimation:path2Animation forKey:kLine2Key];
+    dispatch_time_t startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kAnimationDuration/2.0 * NSEC_PER_SEC));
+    dispatch_after(startTime, dispatch_get_main_queue(), ^(void){
+        UIBezierPath *path2 = [UIBezierPath bezierPath];
+        if (rand() % 2 == 0) {
+            [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height/4.0)];
+            [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
+        } else {
+            [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
+            [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height/4.0)];
+        }
+        
+        CAShapeLayer *path2Layer = [CAShapeLayer layer];
+        path2Layer.frame = self.gameView.bounds;
+        
+        path2Layer.strokeColor = [[UIColor redColor] CGColor];
+        path2Layer.fillColor = nil;
+        path2Layer.lineWidth = kXAndOLineWidth / log(self.dimensions);
+        path2Layer.lineJoin = kCALineJoinBevel;
+        
+        [self.gameView.layer addSublayer:path2Layer];
+        
+        CABasicAnimation *path2Animation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
+        path2Animation.duration = kAnimationDuration;
+        path2Animation.fromValue = [NSNumber numberWithFloat:0.0f];
+        path2Animation.toValue = [NSNumber numberWithFloat:1.0f];
+        [path2Layer addAnimation:path2Animation forKey:kDrawLineAnimation];
+        path2Layer.path = path2.CGPath;
+    });
 }
+
+- (void) drawVerticalGridLine:(int)l {
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    int xCoordinate = (self.gridLength) * l / ((float) self.dimensions) + kGridInset;
+    if (rand() % kTwo == kZero) {
+        [path moveToPoint:CGPointMake(xCoordinate, self.gameView.center.y - self.gridLength/2)];
+        [path addLineToPoint:CGPointMake(xCoordinate, self.gameView.center.y + self.gridLength/2)];
+    } else {
+        [path moveToPoint:CGPointMake(xCoordinate, self.gameView.center.y + self.gridLength/2)];
+        [path addLineToPoint:CGPointMake(xCoordinate, self.gameView.center.y - self.gridLength/2)];
+    }
+    CAShapeLayer *pathLayer = [CAShapeLayer layer];
+    pathLayer.frame = self.gameView.bounds;
+    pathLayer.path = path.CGPath;
+    pathLayer.strokeColor = [[UIColor blackColor] CGColor];
+    pathLayer.fillColor = nil;
+    pathLayer.lineWidth = kGridLineWidth / log(self.dimensions);
+    pathLayer.lineJoin = kCALineJoinBevel;
+    
+    [self.gameView.layer addSublayer:pathLayer];
+    
+    CABasicAnimation *pathAnimation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
+    pathAnimation.duration = kGridLineAnimationDuration;
+    pathAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
+    pathAnimation.toValue = [NSNumber numberWithFloat:1.0f];
+    [pathLayer addAnimation:pathAnimation forKey:kDrawLineAnimation];
+}
+
+- (void) drawHorizontalGridLine:(int)l {
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    int yCoordinate = (self.gameView.center.y - self.gridLength/kTwo) + (self.gridLength * l / ((float) self.dimensions));
+    if (rand() % 2 == 0) {
+        [path moveToPoint:CGPointMake(kGridInset, yCoordinate)];
+        [path addLineToPoint:CGPointMake(kGridInset + self.gridLength, yCoordinate)];
+    } else {
+        [path moveToPoint:CGPointMake(kGridInset + self.gridLength, yCoordinate)];
+        [path addLineToPoint:CGPointMake(kGridInset, yCoordinate)];
+    }
+    
+    CAShapeLayer *pathLayer = [CAShapeLayer layer];
+    pathLayer.frame = self.gameView.bounds;
+    pathLayer.path = path.CGPath;
+    pathLayer.strokeColor = [[UIColor blackColor] CGColor];
+    pathLayer.fillColor = nil;
+    pathLayer.lineWidth = kGridLineWidth / log(self.dimensions);
+    pathLayer.lineJoin = kCALineJoinBevel;
+    
+    [self.gameView.layer addSublayer:pathLayer];
+    
+    CABasicAnimation *pathAnimation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
+    pathAnimation.duration = kGridLineAnimationDuration;
+    pathAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
+    pathAnimation.toValue = [NSNumber numberWithFloat:1.0f];
+    [pathLayer addAnimation:pathAnimation forKey:kDrawLineAnimation];
+}
+
+//MARK: Player Makes a Move
+- (void) playMade:(TicTacToeButton *) sender {
+    if (self.dimensionTextField.isFirstResponder) {
+        [self resignFirstResponderOfDimensionTextField];
+    }
+    
+    if (self.playCount % kTwo == kZero) {
+        [self drawCircleUsingFrame:sender.frame];
+        sender.value = [NSNumber numberWithInteger:O];
+    } else {
+        [self drawXUsingFrame:sender.frame];
+        sender.value = [NSNumber numberWithInteger:X];
+    }
+    
+    if (sender.isBottomToTopDiagnol) {
+        [self.bottomToTopDiagnolValues addObject:sender.value];
+    }
+    
+    if (sender.isCorner) {
+        [self.cornerValues addObject:sender.value];
+    }
+    
+    if (sender.isTopToBottomDiagnol) {
+        [self.topToBottomDiagnolValues addObject:sender.value];
+    }
+    
+    NSNumber *x = sender.coordinates[0];
+    NSMutableArray *innerArray = [self.gameArray objectAtIndex:[x integerValue]];
+    NSNumber *y = sender.coordinates[1];
+    
+    NSNumber *newValue = sender.value;
+    [innerArray replaceObjectAtIndex:[y integerValue] withObject:newValue];
+    
+    self.playCount += 1;
+    int xInt = [x intValue];
+    int yInt = [y intValue];
+    if([self check:newValue WinOf:xInt And:yInt]) {
+        //TODO: Decide if there is anything needed here.
+    }
+    
+    sender.enabled = NO;
+}
+
+- (void) updatePlayerImage {
+    if (self.playCount % kTwo == kZero) {
+        self.currentPlayerImage.image = [UIImage imageNamed:kOImageName];
+    } else {
+        self.currentPlayerImage.image = [UIImage imageNamed:kXImageName];
+    }
+}
+
+
+//MARK: New Game Methods
+
+- (void) makeTicTacToeGame {
+    self.dimensions = [self dimensionTextAsInt];
+    
+    self.gameView.center = self.view.center;
+    self.gameView.transform = CGAffineTransformIdentity;
+    
+    self.bottomToTopDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
+    self.completedBottomToTopDiagnolChecked = false;
+    self.topToBottomDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
+    self.completedTopToBottomDiagnolChecked = false;
+    self.cornerValues = [[NSMutableArray alloc] initWithCapacity:kFour];
+    self.completedCornersChecked = false;
+    self.gameArray = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
+    
+    self.playCount = arc4random() % kTwo;
+    
+    self.currentPlayerLabel.text = @"Current Player:";
+    [self.currentPlayerLabel setTextColor:UIColor.blackColor];
+    
+    [self makeNewGameButton];
+    int counter = kZero;
+    for (int lineNumber = kOne; lineNumber < self.dimensions; lineNumber++) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (counter++ * kGridLineAnimationDuration) * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            [self drawVerticalGridLine:lineNumber];
+        });
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (counter++ * kGridLineAnimationDuration) * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            [self drawHorizontalGridLine:lineNumber];
+        });
+    }
+    
+    for (int x = kZero; x < self.dimensions; x++) {
+        NSMutableArray *xArray = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
+        for (int y = kZero; y < self.dimensions; y++) {
+            [xArray addObject:[NSNumber numberWithInt:kZero]];
+            [self makeTicTacToeButtonAt:x And:y];
+        }
+        [self.gameArray addObject:xArray];
+    }
+}
+
+- (void) makeTicTacToeButtonAt:(int)x And:(int) y {
+    TicTacToeButton *button = [TicTacToeButton buttonWithType:UIButtonTypeCustom];
+    button.coordinates = [NSArray arrayWithObjects:[NSNumber numberWithInt:x], [NSNumber numberWithInt:y],nil];
+    button.value = [NSNumber numberWithInt:0];
+    
+    if ((x == 0 && y == 0) || (x == 0 && y == self.dimensions - 1)
+        || (x == self.dimensions - 1 && y == 0)
+        || (x == self.dimensions - 1 && y == self.dimensions - 1)) {
+        button.isCorner = YES;
+    } else {
+        button.isCorner = NO;
+    }
+    
+    button.isTopToBottomDiagnol = (y == x);
+    button.isBottomToTopDiagnol = NO;
+    for (int i = kZero; i < self.dimensions; i++) {
+        if (x == i && y == self.dimensions - 1 - i) {
+            button.isBottomToTopDiagnol = YES;
+        }
+    }
+    
+    [button addTarget:self
+               action:@selector(playMade:)
+     forControlEvents:UIControlEventTouchUpInside];
+    button.frame = CGRectMake(x/((float) self.dimensions) * self.gridLength + kGridInset + kButtonInset, y/((float) self.dimensions) * self.gridLength + (self.gameView.center.y - self.gridLength/2) + kButtonInset, self.gridLength/((float) self.dimensions) - kButtonInset * kTwo, self.gridLength/((float) self.dimensions) - kButtonInset * 2);
+    button.restorationIdentifier = kGameButtonID;
+    [self.gameView addSubview:button];
+}
+
 
 - (void) makeNewGameButton {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     [button addTarget:self
                action:@selector(newGame:)
      forControlEvents:UIControlEventTouchUpInside];
-    button.frame = CGRectMake(kOffset, self.view.frame.size.height - 100, self.view.frame.size.width - kOffset * 2, 30);
+    button.frame = CGRectMake(kGridInset, [UIScreen mainScreen].bounds.size.height - 125, [UIScreen mainScreen].bounds.size.width - kGridInset * 2, 30);
+    button.layer.cornerRadius = 10;
     button.hidden = NO;
+    [button.layer setBorderWidth:3.0];
+    [button.layer setBorderColor:[[UIColor blackColor] CGColor]];
+    [button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    
     [button setTitle:@"New Game" forState:UIControlStateNormal];
     [self.view addSubview:button];
 }
 
 - (void) newGame:(UIButton *)sender {
-    self.view.layer.sublayers = nil;
-    [self makeGame];
+    self.gameView.layer.sublayers = nil;
+    
+    [self makeTicTacToeGame];
 }
 
+//MARK: Win Check Method
 
+- (BOOL) check:(NSNumber *)value WinOf:(int)x And:(int)y {
+    //Check Bottom-to-Top Diagnol
+    if ((!self.completedBottomToTopDiagnolChecked) && (self.bottomToTopDiagnolValues.count == self.dimensions)) {
+        if (![self.bottomToTopDiagnolValues containsObject: [NSNumber numberWithInt:empty]]) {
+            if (![self.bottomToTopDiagnolValues containsObject: [NSNumber numberWithInt:O]]) {
+                [self won:[NSNumber numberWithInt: X] by:kRow];
+            }
+            if (![self.bottomToTopDiagnolValues containsObject: [NSNumber numberWithInt:X]]) {
+                [self won:[NSNumber numberWithInt: O] by:kRow];
+            }
+        }
+        self.completedBottomToTopDiagnolChecked = YES;
+    }
+    
+    //Check the four corners
+    if ((!self.completedCornersChecked) && (self.cornerValues.count == kFour)) {
+        if ((self.cornerValues[kZero] == self.cornerValues[kOne]) && (self.cornerValues[kOne] == self.cornerValues[kTwo]) && (self.cornerValues[kTwo] == self.cornerValues[kThree])) {
+            [self won:value by: kFourCorners];
+        }
+        self.completedCornersChecked = YES;
+    }
+    
+    //Check Top-to-Bottom Diagnol
+    if ((!self.completedTopToBottomDiagnolChecked) && (self.topToBottomDiagnolValues.count == self.dimensions)) {
+        if (![self.topToBottomDiagnolValues containsObject: [NSNumber numberWithInt:empty]]) {
+            if (![self.topToBottomDiagnolValues containsObject: [NSNumber numberWithInt:O]]) {
+                [self won:[NSNumber numberWithInt: X] by:kRow];
+            }
+            if (![self.topToBottomDiagnolValues containsObject: [NSNumber numberWithInt:X]]) {
+                [self won:[NSNumber numberWithInt: O] by:kRow];
+            }
+        }
+        self.completedTopToBottomDiagnolChecked = YES;
+    }
+    
+    //Check column
+    NSArray *columnAtX = [self getColumnArrayOfX:x];
+    if (![columnAtX containsObject: [NSNumber numberWithInt:empty]]) {
+        if (![columnAtX containsObject: [NSNumber numberWithInt:O]]) {
+            [self won:[NSNumber numberWithInt: X] by:kRow];
+        }
+        if (![columnAtX containsObject: [NSNumber numberWithInt:X]]) {
+            [self won:[NSNumber numberWithInt: O] by:kRow];
+        }
+    }
+    
+    //Check row
+    NSArray *rowAtY = [self getRowArrayOfY:y];
+    if (![rowAtY containsObject: [NSNumber numberWithInt:empty]]) {
+        if (![rowAtY containsObject: [NSNumber numberWithInt:O]]) {
+            [self won:[NSNumber numberWithInt: X] by:kRow];
+        }
+        if (![rowAtY containsObject: [NSNumber numberWithInt:X]]) {
+            [self won:[NSNumber numberWithInt: O] by:kRow];
+        }
+    }
+    
+    //Check surroundings (only works for four right now)
+    int perfectSquareRoot = [self checkForPerfectSquare:self.dimensions];
+    if (perfectSquareRoot && self.dimensions == kFour) { //only check if a square is possible
+        if (y > kZero) { //checks that y is not at the top
+            if ([columnAtX[y - kOne] integerValue] == [value integerValue]) { //checks immediately above
+                NSArray *rowAboveYArray = [self getRowArrayOfY:y - kOne]; //gets above row
+                if (x > kZero) { //checks that x is not all the way left
+                    //check left x - 1, y
+                    //check above and to the left, and x - 1, y - 1
+                    if ([rowAtY[x - kOne] integerValue] == [value integerValue] && [rowAboveYArray[x - kOne] integerValue] == [value integerValue]) {
+                        [self won:value by:kSquare];
+                    }
+                }
+                if (x < self.dimensions - kOne) { //checks that x is not all the way right
+                    //check right x + 1, y
+                    //check above and to the right, and x + 1, y - 1
+                    if ([rowAtY[x + kOne] integerValue] == [value integerValue] && [rowAboveYArray[x + kOne] integerValue] == [value integerValue]) {
+                        [self won:value by:kSquare];
+                    }
+                }
+            }
+        }
+        if (y < self.dimensions - kOne) { //checks that y is not at the bottom
+            if ([columnAtX[y + kOne] integerValue] == [value integerValue]) {   //checks immediately below
+                NSArray *rowBelowYArray = [self getRowArrayOfY:y + kOne]; //gets below row
+                if (x > kZero) {  //checks that x is not all the way left
+                    // check left and down-left, x-1, y and x-1, y+1
+                    if ([rowAtY[x - kOne] integerValue] == [value integerValue] && [rowBelowYArray[x - kOne] integerValue] == [value integerValue]) {
+                        [self won:value by:kSquare];
+                    }
+                }
+                if (x < self.dimensions - kOne) { //checks that x is not all the way right
+                    // check right and down-right, x+1, y and x+1, y+1
+                    if ([rowAtY[x + kOne] integerValue] == [value integerValue] && [rowBelowYArray[x + kOne] integerValue] == [value integerValue]) {
+                        [self won:value by:kSquare];
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+//MARK: Win Method Call
+
+- (void) won:(NSNumber *)winner by:(NSString *) winningMethodString {
+    self.currentPlayerLabel.text = [kWinningPrefix stringByAppendingString:winningMethodString];
+    if (winner == [NSNumber numberWithInt:O]) {
+        self.currentPlayerImage.image = [UIImage imageNamed:kOImageName];
+    } else {
+        self.currentPlayerImage.image = [UIImage imageNamed:kXImageName];
+    }
+    
+    for (UIView * view in self.gameView.subviews) {
+        if ([view.restorationIdentifier isEqualToString:kGameButtonID]) {
+            view.userInteractionEnabled = false;
+        }
+    }
+    for (int i = 0.0; i < 1000.0; i += 2) {
+        dispatch_time_t startTime1 = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * NSEC_PER_SEC));
+        dispatch_after(startTime1, dispatch_get_main_queue(), ^(void){
+            [self.currentPlayerLabel setTextColor:UIColor.redColor];
+        });
+        dispatch_time_t startTime2 = dispatch_time(DISPATCH_TIME_NOW, (int64_t)((i+1) * NSEC_PER_SEC));
+        dispatch_after(startTime2, dispatch_get_main_queue(), ^(void){
+            [self.currentPlayerLabel setTextColor:UIColor.blueColor];
+        });
+    }
+}
+
+//MARK: Row and Column Getters
+
+- (NSArray *) getRowArrayOfY:(int) y {
+    NSMutableArray *pointYArray = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
+    for (NSArray * xArray in self.gameArray) {
+        [pointYArray addObject:[xArray objectAtIndex:y]];
+    }
+    return pointYArray;
+}
+
+- (NSArray *) getColumnArrayOfX:(int) x {
+    return [self.gameArray objectAtIndex:x];
+}
+
+//MARK: Possibility of Perfect Square Check
+//Not needed unless square search is implemented from 4 to N
+
+- (int) checkForPerfectSquare:(int) x {
+    for(int a = kZero; a <= x; a++)
+    {
+        if (x == a * a)
+        {
+            return a;
+        }
+    }
+    return kZero;
+}
+
+//MARK: Pinch Zoom for Game View
+
+- (void)twoFingerPinch:(UIPinchGestureRecognizer *)recognizer
+{
+    CGAffineTransform transform = CGAffineTransformMakeScale(recognizer.scale, recognizer.scale);
+    // you can implement any int/float value in context of what scale you want to zoom in or out
+    self.gameView.transform = transform;
+}
+
+//MARK: Move Game View
+
+float startX = 0;
+float startY = 0;
+-(void) touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    UITouch *touch = [[event allTouches] anyObject];
+    
+    if( [touch view] == self.gameView)
+    {
+        CGPoint location = [touch locationInView:self.view];
+        startX = location.x - self.gameView.center.x;
+        startY = location.y - self.gameView.center.y;
+    }
+}
+- (void) touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event{
+    UITouch *touch = [[event allTouches] anyObject];
+    if( [touch view] == self.gameView)
+    {
+        CGPoint location = [touch locationInView:self.view];
+        location.x =location.x - startX;
+        location.y = location.y - startY;
+        self.gameView.center = location;
+    }
+}
 
 @end

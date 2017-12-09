@@ -10,4 +10,10 @@
 
 @interface TicTacToeButton : UIButton
 
+@property (nonatomic) NSArray *coordinates;
+@property (nonatomic) NSNumber *value;
+@property (nonatomic) BOOL isBottomToTopDiagnol;
+@property (nonatomic) BOOL isTopToBottomDiagnol;
+@property (nonatomic) BOOL isCorner;
+
 @end
