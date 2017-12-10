@@ -35,7 +35,7 @@
 
 @implementation TicTacToeViewController
 
-//MARK: View Did Load
+//MARK: View Controller Class
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -77,7 +77,7 @@
     }
 }
 
-//MARK: Custom Dimension Handlers
+//MARK: Custom Dimension and Associated Text Field Handlers
 
 - (int) dimensionTextAsInt {
     int dimensionTextFieldStringToInt = [self.dimensionTextField.text intValue];
