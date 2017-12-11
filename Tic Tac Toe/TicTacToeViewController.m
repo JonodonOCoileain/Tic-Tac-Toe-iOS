@@ -81,7 +81,7 @@
 
 - (int) dimensionTextAsInt {
     int dimensionTextFieldStringToInt = [self.dimensionTextField.text intValue];
-    if (dimensionTextFieldStringToInt > kMinimumDimension) {
+    if (dimensionTextFieldStringToInt > kMinimumDimension && dimensionTextFieldStringToInt <= 100) {
         return dimensionTextFieldStringToInt;
     } else {
         UIAlertController* alert = [UIAlertController alertControllerWithTitle:kDimensionTitle
@@ -511,45 +511,36 @@
     
     //Check surroundings (only works for four right now)
     int perfectSquareRoot = [self checkForPerfectSquare:self.dimensions];
-    if (perfectSquareRoot && self.dimensions == kFour) { //only check if a square is possible
-        if (y > kZero) { //checks that y is not at the top
-            if ([columnAtX[y - kOne] integerValue] == [value integerValue]) { //checks immediately above
-                NSArray *rowAboveYArray = [self getRowArrayOfY:y - kOne]; //gets above row
-                if (x > kZero) { //checks that x is not all the way left
-                    //check left x - 1, y
-                    //check above and to the left, and x - 1, y - 1
-                    if ([rowAtY[x - kOne] integerValue] == [value integerValue] && [rowAboveYArray[x - kOne] integerValue] == [value integerValue]) {
-                        [self won:value by:kSquare];
-                    }
-                }
-                if (x < self.dimensions - kOne) { //checks that x is not all the way right
-                    //check right x + 1, y
-                    //check above and to the right, and x + 1, y - 1
-                    if ([rowAtY[x + kOne] integerValue] == [value integerValue] && [rowAboveYArray[x + kOne] integerValue] == [value integerValue]) {
-                        [self won:value by:kSquare];
-                    }
-                }
-            }
+
+    if (perfectSquareRoot) { //only check if a square is possible
+        int oppositeValue = O;
+        if ([value integerValue] == O) {
+            oppositeValue = X;
         }
-        if (y < self.dimensions - kOne) { //checks that y is not at the bottom
-            if ([columnAtX[y + kOne] integerValue] == [value integerValue]) {   //checks immediately below
-                NSArray *rowBelowYArray = [self getRowArrayOfY:y + kOne]; //gets below row
-                if (x > kZero) {  //checks that x is not all the way left
-                    // check left and down-left, x-1, y and x-1, y+1
-                    if ([rowAtY[x - kOne] integerValue] == [value integerValue] && [rowBelowYArray[x - kOne] integerValue] == [value integerValue]) {
-                        [self won:value by:kSquare];
-                    }
+        for (int i = kZero; i < columnAtX.count - perfectSquareRoot; i++) {
+            NSArray *subColumnOfColumnXStartngAtIOfSizeSquareRoot = [columnAtX subarrayWithRange:NSMakeRange(i, perfectSquareRoot)];
+            if (![subColumnOfColumnXStartngAtIOfSizeSquareRoot containsObject: [NSNumber numberWithInt:empty]] &&
+                ![subColumnOfColumnXStartngAtIOfSizeSquareRoot containsObject: [NSNumber numberWithInt:oppositeValue]]) {
+                int j = x - perfectSquareRoot + kOne;
+                if (j < 0) {
+                    j = 0;
                 }
-                if (x < self.dimensions - kOne) { //checks that x is not all the way right
-                    // check right and down-right, x+1, y and x+1, y+1
-                    if ([rowAtY[x + kOne] integerValue] == [value integerValue] && [rowBelowYArray[x + kOne] integerValue] == [value integerValue]) {
-                        [self won:value by:kSquare];
+                for (; j < self.gameArray.count - perfectSquareRoot; j++) {
+                    int squareColumnConsistencyCounter = 0;
+                    for (int k = i; k < i + perfectSquareRoot; k++) {
+                        if (![[[self getRowArrayOfY:k] subarrayWithRange:NSMakeRange(j, perfectSquareRoot)] containsObject: [NSNumber numberWithInt:empty]] && ![[[self getRowArrayOfY:k] subarrayWithRange:NSMakeRange(j, perfectSquareRoot)] containsObject: [NSNumber numberWithInt:oppositeValue]]) {
+                            squareColumnConsistencyCounter++;
+                            if (squareColumnConsistencyCounter == perfectSquareRoot) {
+                                [self won:value by:kSquare];
+                            }
+                        } else {
+                            squareColumnConsistencyCounter = 0;
+                        }
                     }
                 }
             }
         }
     }
-    
     return false;
 }
 
@@ -557,7 +548,7 @@
 
 - (void) won:(NSNumber *)winner by:(NSString *) winningMethodString {
     self.currentPlayerLabel.text = [kWinningPrefix stringByAppendingString:winningMethodString];
-    if (winner == [NSNumber numberWithInt:O]) {
+    if ([winner integerValue] == O) {
         self.currentPlayerImage.image = [UIImage imageNamed:kOImageName];
     } else {
         self.currentPlayerImage.image = [UIImage imageNamed:kXImageName];
