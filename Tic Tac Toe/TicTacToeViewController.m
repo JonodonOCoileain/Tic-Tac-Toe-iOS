@@ -28,8 +28,8 @@
     @property (nonatomic) int playCount;
     @property (weak, nonatomic) IBOutlet UIImageView *currentPlayerImage;
     @property (weak, nonatomic) IBOutlet UILabel *currentPlayerLabel;
-@property (weak, nonatomic) IBOutlet UITextField *dimensionTextField;
-@property (weak, nonatomic) IBOutlet UIStackView *dimensionStackView;
+    @property (weak, nonatomic) IBOutlet UITextField *dimensionTextField;
+    @property (weak, nonatomic) IBOutlet UIStackView *dimensionStackView;
 
 @end
 
@@ -81,7 +81,7 @@
 
 - (int) dimensionTextAsInt {
     int dimensionTextFieldStringToInt = [self.dimensionTextField.text intValue];
-    if (dimensionTextFieldStringToInt > kMinimumDimension && dimensionTextFieldStringToInt <= 100) {
+    if (dimensionTextFieldStringToInt > kMinimumDimension && dimensionTextFieldStringToInt <= 70) {
         return dimensionTextFieldStringToInt;
     } else {
         UIAlertController* alert = [UIAlertController alertControllerWithTitle:kDimensionTitle
@@ -152,8 +152,8 @@
 //MARK: Drawings
 
 - (void) drawCircleUsingFrame:(CGRect)frame {
-    int radius = self.gridLength/((float) self.dimensions)/4;
-    int strokeWidth = kXAndOLineWidth / log(self.dimensions);
+    double radius = self.gridLength/((double) self.dimensions)/4;
+    double strokeWidth = kXAndOLineWidth / log(self.dimensions);
     CGColorRef color = [UIColor blueColor].CGColor;
     
     
@@ -359,6 +359,8 @@
     self.gameView.center = self.view.center;
     self.gameView.transform = CGAffineTransformIdentity;
     
+    [self.currentPlayerLabel setTextColor:[UIColor blackColor]];
+    
     self.bottomToTopDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
     self.completedBottomToTopDiagnolChecked = NO;
     self.topToBottomDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
@@ -518,15 +520,15 @@
         }
     }
     
-    //Check surroundings (only works for four right now)
+    //Check for box that is perfect square root of dimension by perfect square root
     int perfectSquareRoot = [self checkForPerfectSquare:self.dimensions];
 
-    if (perfectSquareRoot) { //only check if a square is possible
+    if (perfectSquareRoot) { //only check if a square root exists as an integer
         int oppositeValue = O;
         if ([value integerValue] == O) {
             oppositeValue = X;
         }
-        for (int i = kZero; i < columnAtX.count - perfectSquareRoot; i++) {
+        for (int i = kZero; i < columnAtX.count - perfectSquareRoot + 1; i++) {
             NSArray *subColumnOfColumnXStartngAtIOfSizeSquareRoot = [columnAtX subarrayWithRange:NSMakeRange(i, perfectSquareRoot)];
             if (![subColumnOfColumnXStartngAtIOfSizeSquareRoot containsObject: [NSNumber numberWithInt:empty]] &&
                 ![subColumnOfColumnXStartngAtIOfSizeSquareRoot containsObject: [NSNumber numberWithInt:oppositeValue]]) {
@@ -534,7 +536,8 @@
                 if (j < 0) {
                     j = 0;
                 }
-                for (; j < self.gameArray.count - perfectSquareRoot; j++) {
+                
+                for (; j < self.gameArray.count - perfectSquareRoot + kOne; j++) {
                     int squareColumnConsistencyCounter = 0;
                     for (int k = i; k < i + perfectSquareRoot; k++) {
                         if (![[[self getRowArrayOfY:k] subarrayWithRange:NSMakeRange(j, perfectSquareRoot)] containsObject: [NSNumber numberWithInt:empty]] && ![[[self getRowArrayOfY:k] subarrayWithRange:NSMakeRange(j, perfectSquareRoot)] containsObject: [NSNumber numberWithInt:oppositeValue]]) {
@@ -568,7 +571,7 @@
             view.userInteractionEnabled = NO;
         }
     }
-    for (int i = 0.0; i < 1000.0; i += 2) {
+    for (int i = 0.0; i < 10.0; i += 2) {
         dispatch_time_t startTime1 = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * NSEC_PER_SEC));
         dispatch_after(startTime1, dispatch_get_main_queue(), ^(void){
             [self.currentPlayerLabel setTextColor:UIColor.redColor];

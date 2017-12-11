@@ -23,7 +23,7 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 #define kGridLineWidth 6.0f
 #define kXAndOLineWidth 9.0f
 #define kDimensionTitle @"Dimension"
-#define kDimensionMessage @"The dimension of this game must be an integer of two or greater and less than or equal to one hundred. The default of four has been entered for you."
+#define kDimensionMessage @"The dimension of this game must be an integer of two or greater and less than or equal to one seventy. The default of four has been entered for you."
 #define kOK @"OK"
 #define kDrawCircleAnimation @"drawCircleAnimation"
 #define kDrawLineAnimation @"drawLineAnimation"
