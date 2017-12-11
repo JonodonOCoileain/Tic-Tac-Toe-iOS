@@ -374,20 +374,29 @@
     
     self.isBuildingGrid = YES;
     
-    int counter = kZero;
+    [self drawGrid];
+    
+    [self addButtons];
+}
+
+- (void) drawGrid {
     for (int lineNumber = kOne; lineNumber < self.dimensions; lineNumber++) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (counter++ * kGridLineAnimationDuration) * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (double)arc4random() / ARC4RANDOM_MAX
+                                                         * 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [self drawVerticalGridLine:lineNumber];
         });
         __weak typeof (self) weakSelf = self;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (counter++ * kGridLineAnimationDuration) * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (double)arc4random() / ARC4RANDOM_MAX
+                                     * 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [self drawHorizontalGridLine:lineNumber];
             if (lineNumber == weakSelf.dimensions - 1) {
                 weakSelf.isBuildingGrid = NO;
             }
         });
     }
-    
+}
+
+- (void) addButtons {
     for (int x = kZero; x < self.dimensions; x++) {
         NSMutableArray *xArray = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
         for (int y = kZero; y < self.dimensions; y++) {

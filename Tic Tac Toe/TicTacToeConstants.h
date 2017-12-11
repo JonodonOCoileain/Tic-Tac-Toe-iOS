@@ -18,6 +18,7 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
     O = 2
 };
 
+#define ARC4RANDOM_MAX 0x100000000
 #define kLevelInt 4
 #define kGridLineWidth 6.0f
 #define kXAndOLineWidth 9.0f
