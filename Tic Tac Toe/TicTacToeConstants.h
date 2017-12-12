@@ -42,6 +42,7 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 #define kOImageName @"o.png"
 #define kXImageName @"x.png"
 #define kAnimationDuration 0.5
+#define kSecondHalfOfXWaitSeconds 0.5
 #define kGridLineAnimationDuration 0.2
 #define kWinningPrefix @"Winner by "
 static const float kGridInset = 8.0f;

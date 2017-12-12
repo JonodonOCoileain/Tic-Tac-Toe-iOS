@@ -161,8 +161,11 @@
     CGFloat endAngle = 1;
     
     CAShapeLayer *circle = [CAShapeLayer layer];
-    
-    circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 2.0*radius, 2.0*radius) cornerRadius:radius].CGPath;
+    if (rand() % 2 == 0) {
+        circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 2.0*radius, 2.0*radius) cornerRadius:radius].CGPath;
+    } else {
+        circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(2.0*radius, 2.0*radius, -2.0*radius, -2.0*radius) cornerRadius:radius].CGPath;
+    }
     
     circle.position = CGPointMake(CGRectGetMidX(frame)-radius, CGRectGetMidY(frame)-radius);
     
@@ -183,39 +186,53 @@
 }
 
 - (void) drawXUsingFrame:(CGRect)frame {
-    UIBezierPath *path1 = [UIBezierPath bezierPath];
-    if (rand() % 2 == 0) {
-        [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height/4.0)];
-        [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
-    } else {
-        [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
-        [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height/4.0)];
+    dispatch_time_t startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kZero * NSEC_PER_SEC));
+    int rand1 = rand();
+    if (rand1 % 2 == 0) {
+        startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kSecondHalfOfXWaitSeconds * NSEC_PER_SEC));
     }
-    CAShapeLayer *path1Layer = [CAShapeLayer layer];
-    path1Layer.frame = self.gameView.bounds;
-    path1Layer.strokeColor = [[UIColor redColor] CGColor];
-    path1Layer.fillColor = nil;
-    path1Layer.lineWidth = kXAndOLineWidth / log(self.dimensions);
-    path1Layer.lineJoin = kCALineJoinBevel;
     
-    [self.gameView.layer addSublayer:path1Layer];
+    dispatch_after(startTime, dispatch_get_main_queue(), ^(void){
     
-    CABasicAnimation *path1Animation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
-    path1Animation.duration = kAnimationDuration/2.0; //half of X is drawn in half the time of a circle
-    path1Animation.fromValue = [NSNumber numberWithFloat:0.0f];
-    path1Animation.toValue = [NSNumber numberWithFloat:1.0f];
-    [path1Layer addAnimation:path1Animation forKey:kDrawLineAnimation];
-    path1Layer.path = path1.CGPath;
+        UIBezierPath *path1 = [UIBezierPath bezierPath];
+        if (rand() % 2 == 0) {
+            [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.5, frame.origin.y + frame.size.height/4.5)];
+            [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.5/4.5, frame.origin.y + frame.size.height*3.5/4.5)];
+        } else {
+            [path1 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.5/4.5, frame.origin.y + frame.size.height*3.5/4.5)];
+            [path1 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.5, frame.origin.y + frame.size.height/4.5)];
+        }
+        CAShapeLayer *path1Layer = [CAShapeLayer layer];
+        path1Layer.frame = self.gameView.bounds;
+        path1Layer.strokeColor = [[UIColor redColor] CGColor];
+        path1Layer.fillColor = nil;
+        path1Layer.lineWidth = kXAndOLineWidth / log(self.dimensions);
+        path1Layer.lineJoin = kCALineJoinBevel;
     
-    dispatch_time_t startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kAnimationDuration/2.0 * NSEC_PER_SEC));
+        [self.gameView.layer addSublayer:path1Layer];
+    
+        CABasicAnimation *path1Animation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
+        path1Animation.duration = kAnimationDuration/2.0; //half of X is drawn in half the time of a circle
+        path1Animation.fromValue = [NSNumber numberWithFloat:0.0f];
+        path1Animation.toValue = [NSNumber numberWithFloat:1.0f];
+        [path1Layer addAnimation:path1Animation forKey:kDrawLineAnimation];
+        path1Layer.path = path1.CGPath;
+    });
+    
+    if (rand1 % 2 == 0) {
+        startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kZero * NSEC_PER_SEC));
+    } else {
+        startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kSecondHalfOfXWaitSeconds * NSEC_PER_SEC));
+    }
+    
     dispatch_after(startTime, dispatch_get_main_queue(), ^(void){
         UIBezierPath *path2 = [UIBezierPath bezierPath];
         if (rand() % 2 == 0) {
-            [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height/4.0)];
-            [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
+            [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.5/4.5, frame.origin.y + frame.size.height/4.5)];
+            [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.5, frame.origin.y + frame.size.height*3.5/4.5)];
         } else {
-            [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.0, frame.origin.y + frame.size.height*3.0/4.0)];
-            [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.0/4.0, frame.origin.y + frame.size.height/4.0)];
+            [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width/4.5, frame.origin.y + frame.size.height*3.5/4.5)];
+            [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width*3.5/4.5, frame.origin.y + frame.size.height/4.5)];
         }
         
         CAShapeLayer *path2Layer = [CAShapeLayer layer];
