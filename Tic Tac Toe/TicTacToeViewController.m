@@ -46,7 +46,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.dimensions = kLevelInt;
+    self.dimensions = kDimensionDefault;
     self.dimensionTextField.text = [NSString stringWithFormat: @"%d" , self.dimensions];
     
     self.metaGameDrawingColor = [UIColor blackColor];
@@ -116,7 +116,7 @@
         [alert addAction:defaultAction];
         [self presentViewController:alert animated:YES completion:nil];
         
-        self.dimensionTextField.text = kFourString;
+        self.dimensionTextField.text = [NSString stringWithFormat: kDigit, kDimensionDefault];
         
         return kFour;
     }
@@ -423,7 +423,7 @@
     
     self.playCount = arc4random() % kTwo;
     
-    self.currentPlayerLabel.text = @"Current Player:";
+    self.currentPlayerLabel.text = kCurrentPlayerLabelTitle;
     [self.currentPlayerLabel setTextColor:self.metaGameDrawingColor];
     
     self.isBuildingGrid = YES;
@@ -441,7 +441,7 @@
         });
         __weak typeof (self) weakSelf = self;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (double)arc4random() / ARC4RANDOM_MAX
-                                     * 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                                     * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [self drawHorizontalGridLine:lineNumber];
             if (lineNumber == weakSelf.dimensions - 1) {
                 weakSelf.isBuildingGrid = NO;
@@ -593,7 +593,7 @@
                 }
                 
                 for (; j < self.gameArray.count - perfectSquareRoot + kOne; j++) {
-                    int squareColumnConsistencyCounter = 0;
+                    int squareColumnConsistencyCounter = kZero;
                     for (int k = i; k < i + perfectSquareRoot; k++) {
                         if (![[[self getRowArrayOfY:k] subarrayWithRange:NSMakeRange(j, perfectSquareRoot)] containsObject: [NSNumber numberWithInt:empty]] && ![[[self getRowArrayOfY:k] subarrayWithRange:NSMakeRange(j, perfectSquareRoot)] containsObject: [NSNumber numberWithInt:oppositeValue]]) {
                             squareColumnConsistencyCounter++;
@@ -601,7 +601,7 @@
                                 [self won:value by:kSquare];
                             }
                         } else {
-                            squareColumnConsistencyCounter = 0;
+                            squareColumnConsistencyCounter = kZero;
                         }
                     }
                 }
@@ -651,6 +651,7 @@
 - (NSArray *) getColumnArrayOfX:(int) x {
     return [self.gameArray objectAtIndex:x];
 }
+
 
 //MARK: Possibility of Perfect Square Check
 //Not needed unless square search is implemented from 4 to N

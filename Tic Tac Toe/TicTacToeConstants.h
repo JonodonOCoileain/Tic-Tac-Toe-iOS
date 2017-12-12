@@ -19,10 +19,11 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 };
 
 #define ARC4RANDOM_MAX 0x100000000
-#define kLevelInt 4
+#define kDimensionDefault 4
 #define kButtonBorderWidth 3.0
 #define kGridLineWidth 6.0f
 #define kXAndOLineWidth 9.0f
+#define kCurrentPlayerLabelTitle @"Current Player:"
 #define kDimensionTitle @"Dimension"
 #define kMaximumDimension 70
 #define kMinimumDimension 1
@@ -51,8 +52,8 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 #define kSecondHalfOfXWaitSeconds 0.5
 #define kGridLineAnimationDuration 0.2
 #define kWinAnnouncementBeginning @"Winner by "
+#define kDigit @"%d"
 static const float kGridInset = 8.0f;
 static const float kButtonInset = 4.0f;
-static const float kLevelFloat = (float)kLevelInt;
 
 #endif /* TicTacToeConstants_h */
