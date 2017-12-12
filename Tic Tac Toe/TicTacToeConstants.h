@@ -20,15 +20,18 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 
 #define ARC4RANDOM_MAX 0x100000000
 #define kLevelInt 4
+#define kButtonBorderWidth 3.0
 #define kGridLineWidth 6.0f
 #define kXAndOLineWidth 9.0f
 #define kDimensionTitle @"Dimension"
-#define kDimensionMessage @"The dimension of this game must be an integer of two or greater and less than or equal to one seventy. The default of four has been entered for you."
+#define kMaximumDimension 70
+#define kMinimumDimension 1
+#define kDimensionMessageString @"The dimension of this game must be an integer of two or greater and less than or equal to %d. The default of four has been entered for you."
 #define kOK @"OK"
-#define kDrawCircleAnimation @"drawCircleAnimation"
+#define kdrawOAnimation @"drawOAnimation"
 #define kDrawLineAnimation @"drawLineAnimation"
 #define kStrokeEnd @"strokeEnd"
-#define kMinimumDimension 1
+#define kNegativeOne -1
 #define kZero 0
 #define kOne 1
 #define kTwo 2
@@ -36,17 +39,20 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 #define kFour 4
 #define kFourString @"4";
 #define kFourCorners @"Four Corners!"
+#define kNewGameButtonTitle @"New Game"
 #define kGameButtonID @"gameButton"
 #define kRow @"Row!"
 #define kSquare @"Square!"
 #define kOImageName @"o.png"
 #define kXImageName @"x.png"
-#define kAnimationDuration 0.5
+#define kImageTransitionDuration 0.25
+#define kXAndOAnimationDuration 0.5
+#define kKeyboardTransitionAnimationDuration 0.1
 #define kSecondHalfOfXWaitSeconds 0.5
 #define kGridLineAnimationDuration 0.2
-#define kWinningPrefix @"Winner by "
+#define kWinAnnouncementBeginning @"Winner by "
 static const float kGridInset = 8.0f;
-static const float kButtonInset = 8.0f;
+static const float kButtonInset = 4.0f;
 static const float kLevelFloat = (float)kLevelInt;
 
 #endif /* TicTacToeConstants_h */

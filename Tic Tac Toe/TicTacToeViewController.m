@@ -26,6 +26,13 @@
     @property (nonatomic) int gridLength;
     @property (nonatomic) UIButton* makeNewGameButton;
     @property (nonatomic) int playCount;
+    @property (nonatomic) int keyboardHeight;
+    @property (nonatomic) UIColor *metaGameDrawingColor;
+    @property (nonatomic) UIColor *gridColor;
+    @property (nonatomic) UIColor *XColor;
+    @property (nonatomic) UIColor *OColor;
+    @property (nonatomic) UIColor *backgroundColor;
+
     @property (weak, nonatomic) IBOutlet UIImageView *currentPlayerImage;
     @property (weak, nonatomic) IBOutlet UILabel *currentPlayerLabel;
     @property (weak, nonatomic) IBOutlet UITextField *dimensionTextField;
@@ -42,9 +49,18 @@
     self.dimensions = kLevelInt;
     self.dimensionTextField.text = [NSString stringWithFormat: @"%d" , self.dimensions];
     
+    self.metaGameDrawingColor = [UIColor blackColor];
+    self.XColor = [UIColor redColor];
+    self.OColor = [UIColor blueColor];
+    self.gridColor = [UIColor blackColor];
+    self.backgroundColor = [UIColor whiteColor];
+    
+    self.view.backgroundColor = self.backgroundColor;
+    self.dimensionTextField.backgroundColor = self.backgroundColor;
+    
     self.isBuildingGrid = NO;
     
-    self.gridLength = self.view.frame.size.width - kGridInset - kGridInset; //left and right insets
+    self.gridLength = self.view.frame.size.width - kGridInset - kGridInset; //both left and right insets
     [self addObserver:self forKeyPath:@"playCount" options:NSKeyValueObservingOptionOld context:nil];
     
     self.gameView = [[UIView alloc] initWithFrame:self.view.frame];
@@ -59,6 +75,11 @@
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(resignFirstResponderOfDimensionTextField)];
     
     [self.view addGestureRecognizer:tap];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardDidShow:)
+                                                 name:UIKeyboardDidShowNotification
+                                               object:nil];
     
     [self makeTicTacToeGame];
     
@@ -81,11 +102,12 @@
 
 - (int) dimensionTextAsInt {
     int dimensionTextFieldStringToInt = [self.dimensionTextField.text intValue];
-    if (dimensionTextFieldStringToInt > kMinimumDimension && dimensionTextFieldStringToInt <= 70) {
+    if (dimensionTextFieldStringToInt > kMinimumDimension && dimensionTextFieldStringToInt <= kMaximumDimension) {
         return dimensionTextFieldStringToInt;
     } else {
         UIAlertController* alert = [UIAlertController alertControllerWithTitle:kDimensionTitle
-                                                                       message:kDimensionMessage
+                                                                       message:[NSString stringWithFormat:
+                                                                                kDimensionMessageString, kMaximumDimension]
                                                                 preferredStyle:UIAlertControllerStyleAlert];
         
         UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:kOK style:UIAlertActionStyleDefault
@@ -117,16 +139,6 @@
 {
     self.makeNewGameButton.hidden = YES;
     
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationDuration:.3];
-    [UIView setAnimationBeginsFromCurrentState:TRUE];
-    self.view.frame = CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y -258, self.view.frame.size.width, self.view.frame.size.height);
-    
-    self.gameView.center = self.view.center;
-    
-    [UIView commitAnimations];
-    
-    
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
@@ -142,29 +154,45 @@
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration:.3];
     [UIView setAnimationBeginsFromCurrentState:TRUE];
-    self.view.frame = CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y +258, self.view.frame.size.width, self.view.frame.size.height);
+    self.view.frame = CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y + self.keyboardHeight, self.view.frame.size.width, self.view.frame.size.height);
     
     self.gameView.center = self.view.center;
     
     [UIView commitAnimations];
     
 }
+
+- (void)keyboardDidShow:(NSNotification*)notification
+{
+    NSDictionary* keyboardInfo = [notification userInfo];
+    NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
+    self.keyboardHeight = [keyboardFrameBegin CGRectValue].size.height;
+    
+    [UIView beginAnimations:nil context:nil];
+    [UIView setAnimationDuration:kKeyboardTransitionAnimationDuration];
+    [UIView setAnimationBeginsFromCurrentState:TRUE];
+    self.view.frame = CGRectMake(self.view.frame.origin.x, self.view.frame.origin.y - self.keyboardHeight, self.view.frame.size.width, self.view.frame.size.height);
+    
+    [UIView commitAnimations];
+}
+
 //MARK: Drawings
 
-- (void) drawCircleUsingFrame:(CGRect)frame {
-    double radius = self.gridLength/((double) self.dimensions)/4;
+- (void) drawOUsingFrame:(CGRect)frame {
+    double radius = [self circleRadius];
+    double diameter = [self circleDiameter:radius];
+    double invertedDiameter = diameter * kNegativeOne;
     double strokeWidth = kXAndOLineWidth / log(self.dimensions);
     CGColorRef color = [UIColor blueColor].CGColor;
     
-    
-    CGFloat startAngle = 0;
-    CGFloat endAngle = 1;
+    CGFloat startAngle = kZero;
+    CGFloat endAngle = kOne;
     
     CAShapeLayer *circle = [CAShapeLayer layer];
     if (rand() % 2 == 0) {
-        circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 2.0*radius, 2.0*radius) cornerRadius:radius].CGPath;
+        circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(kZero, kZero, diameter, diameter) cornerRadius:radius].CGPath;
     } else {
-        circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(2.0*radius, 2.0*radius, -2.0*radius, -2.0*radius) cornerRadius:radius].CGPath;
+        circle.path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(diameter, diameter, invertedDiameter, invertedDiameter) cornerRadius:radius].CGPath;
     }
     
     circle.position = CGPointMake(CGRectGetMidX(frame)-radius, CGRectGetMidY(frame)-radius);
@@ -177,12 +205,20 @@
     circle.strokeEnd = endAngle;
     
     CABasicAnimation *drawAnimation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
-    drawAnimation.duration  = kAnimationDuration;
+    drawAnimation.duration  = kXAndOAnimationDuration;
     drawAnimation.fromValue = [NSNumber numberWithFloat:startAngle];
     drawAnimation.toValue   = [NSNumber numberWithFloat:endAngle];
     
     drawAnimation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-    [circle addAnimation:drawAnimation forKey:kDrawCircleAnimation];
+    [circle addAnimation:drawAnimation forKey:kdrawOAnimation];
+}
+
+- (double) circleRadius {
+    return self.gridLength/((double) self.dimensions)/4;
+}
+
+- (double) circleDiameter:(double)radius {
+    return kTwo * radius;
 }
 
 - (void) drawXUsingFrame:(CGRect)frame {
@@ -212,14 +248,14 @@
         [self.gameView.layer addSublayer:path1Layer];
     
         CABasicAnimation *path1Animation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
-        path1Animation.duration = kAnimationDuration/2.0; //half of X is drawn in half the time of a circle
-        path1Animation.fromValue = [NSNumber numberWithFloat:0.0f];
-        path1Animation.toValue = [NSNumber numberWithFloat:1.0f];
+        path1Animation.duration = kXAndOAnimationDuration/kTwo; //half of X is drawn in half the time of a circle
+        path1Animation.fromValue = [NSNumber numberWithFloat:kZero];
+        path1Animation.toValue = [NSNumber numberWithFloat:kOne];
         [path1Layer addAnimation:path1Animation forKey:kDrawLineAnimation];
         path1Layer.path = path1.CGPath;
     });
     
-    if (rand1 % 2 == 0) {
+    if (rand1 % kTwo == kZero) {
         startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kZero * NSEC_PER_SEC));
     } else {
         startTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kSecondHalfOfXWaitSeconds * NSEC_PER_SEC));
@@ -227,7 +263,7 @@
     
     dispatch_after(startTime, dispatch_get_main_queue(), ^(void){
         UIBezierPath *path2 = [UIBezierPath bezierPath];
-        if (rand() % 2 == 0) {
+        if (rand() % kTwo == kZero) {
             [path2 moveToPoint:CGPointMake(frame.origin.x + frame.size.width*3.5/4.5, frame.origin.y + frame.size.height/4.5)];
             [path2 addLineToPoint:CGPointMake(frame.origin.x + frame.size.width/4.5, frame.origin.y + frame.size.height*3.5/4.5)];
         } else {
@@ -246,9 +282,9 @@
         [self.gameView.layer addSublayer:path2Layer];
         
         CABasicAnimation *path2Animation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
-        path2Animation.duration = kAnimationDuration;
-        path2Animation.fromValue = [NSNumber numberWithFloat:0.0f];
-        path2Animation.toValue = [NSNumber numberWithFloat:1.0f];
+        path2Animation.duration = kXAndOAnimationDuration;
+        path2Animation.fromValue = [NSNumber numberWithFloat:kZero];
+        path2Animation.toValue = [NSNumber numberWithFloat:kOne];
         [path2Layer addAnimation:path2Animation forKey:kDrawLineAnimation];
         path2Layer.path = path2.CGPath;
     });
@@ -267,7 +303,7 @@
     CAShapeLayer *pathLayer = [CAShapeLayer layer];
     pathLayer.frame = self.gameView.bounds;
     pathLayer.path = path.CGPath;
-    pathLayer.strokeColor = [[UIColor blackColor] CGColor];
+    pathLayer.strokeColor = [self.gridColor CGColor];
     pathLayer.fillColor = nil;
     pathLayer.lineWidth = kGridLineWidth / log(self.dimensions);
     pathLayer.lineJoin = kCALineJoinBevel;
@@ -276,15 +312,15 @@
     
     CABasicAnimation *pathAnimation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
     pathAnimation.duration = kGridLineAnimationDuration;
-    pathAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-    pathAnimation.toValue = [NSNumber numberWithFloat:1.0f];
+    pathAnimation.fromValue = [NSNumber numberWithFloat:kZero];
+    pathAnimation.toValue = [NSNumber numberWithFloat:kOne];
     [pathLayer addAnimation:pathAnimation forKey:kDrawLineAnimation];
 }
 
 - (void) drawHorizontalGridLine:(int)l {
     UIBezierPath *path = [UIBezierPath bezierPath];
     int yCoordinate = (self.gameView.center.y - self.gridLength/kTwo) + (self.gridLength * l / ((float) self.dimensions));
-    if (rand() % 2 == 0) {
+    if (rand() % kTwo == kZero) {
         [path moveToPoint:CGPointMake(kGridInset, yCoordinate)];
         [path addLineToPoint:CGPointMake(kGridInset + self.gridLength, yCoordinate)];
     } else {
@@ -295,7 +331,7 @@
     CAShapeLayer *pathLayer = [CAShapeLayer layer];
     pathLayer.frame = self.gameView.bounds;
     pathLayer.path = path.CGPath;
-    pathLayer.strokeColor = [[UIColor blackColor] CGColor];
+    pathLayer.strokeColor = [self.gridColor CGColor];
     pathLayer.fillColor = nil;
     pathLayer.lineWidth = kGridLineWidth / log(self.dimensions);
     pathLayer.lineJoin = kCALineJoinBevel;
@@ -304,8 +340,8 @@
     
     CABasicAnimation *pathAnimation = [CABasicAnimation animationWithKeyPath:kStrokeEnd];
     pathAnimation.duration = kGridLineAnimationDuration;
-    pathAnimation.fromValue = [NSNumber numberWithFloat:0.0f];
-    pathAnimation.toValue = [NSNumber numberWithFloat:1.0f];
+    pathAnimation.fromValue = [NSNumber numberWithFloat:kZero];
+    pathAnimation.toValue = [NSNumber numberWithFloat:kOne];
     [pathLayer addAnimation:pathAnimation forKey:kDrawLineAnimation];
 }
 
@@ -316,7 +352,7 @@
     }
     
     if (self.playCount % kTwo == kZero) {
-        [self drawCircleUsingFrame:sender.frame];
+        [self drawOUsingFrame:sender.frame];
         sender.value = [NSNumber numberWithInteger:O];
     } else {
         [self drawXUsingFrame:sender.frame];
@@ -335,26 +371,25 @@
         [self.topToBottomDiagnolValues addObject:sender.value];
     }
     
-    NSNumber *x = sender.coordinates[0];
+    NSNumber *x = sender.coordinates[kZero];
     NSMutableArray *innerArray = [self.gameArray objectAtIndex:[x integerValue]];
-    NSNumber *y = sender.coordinates[1];
+    NSNumber *y = sender.coordinates[kOne];
     
     NSNumber *newValue = sender.value;
     [innerArray replaceObjectAtIndex:[y integerValue] withObject:newValue];
     
-    self.playCount += 1;
+    self.playCount++;
     int xInt = [x intValue];
     int yInt = [y intValue];
-    if([self check:newValue WinOf:xInt And:yInt]) {
-        //TODO: Decide if there is anything needed here.
-    }
+    
+    [self check:newValue WinOf:xInt And:yInt];
     
     sender.enabled = NO;
 }
 
 - (void) updatePlayerImage {
     CATransition *transition = [CATransition animation];
-    transition.duration = 0.25;
+    transition.duration = kImageTransitionDuration;
     transition.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
     transition.type = kCATransitionFade;
     transition.delegate = self;
@@ -376,7 +411,7 @@
     self.gameView.center = self.view.center;
     self.gameView.transform = CGAffineTransformIdentity;
     
-    [self.currentPlayerLabel setTextColor:[UIColor blackColor]];
+    [self.currentPlayerLabel setTextColor:self.metaGameDrawingColor];
     
     self.bottomToTopDiagnolValues = [[NSMutableArray alloc] initWithCapacity:self.dimensions];
     self.completedBottomToTopDiagnolChecked = NO;
@@ -389,7 +424,7 @@
     self.playCount = arc4random() % kTwo;
     
     self.currentPlayerLabel.text = @"Current Player:";
-    [self.currentPlayerLabel setTextColor:UIColor.blackColor];
+    [self.currentPlayerLabel setTextColor:self.metaGameDrawingColor];
     
     self.isBuildingGrid = YES;
     
@@ -450,7 +485,10 @@
     [button addTarget:self
                action:@selector(playMade:)
      forControlEvents:UIControlEventTouchUpInside];
-    button.frame = CGRectMake(x/((float) self.dimensions) * self.gridLength + kGridInset + kButtonInset, y/((float) self.dimensions) * self.gridLength + (self.gameView.center.y - self.gridLength/2) + kButtonInset, self.gridLength/((float) self.dimensions) - kButtonInset * kTwo, self.gridLength/((float) self.dimensions) - kButtonInset * 2);
+    button.frame = CGRectMake(x/((float) self.dimensions) * self.gridLength + kGridInset + kButtonInset,
+                              y/((float) self.dimensions) * self.gridLength + (self.gameView.center.y - self.gridLength/2) + kButtonInset,
+                              self.gridLength/((float) self.dimensions) - kButtonInset * kTwo,
+                              self.gridLength/((float) self.dimensions) - kButtonInset * kTwo);
     button.restorationIdentifier = kGameButtonID;
     [self.gameView addSubview:button];
 }
@@ -461,14 +499,14 @@
     [self.makeNewGameButton addTarget:self
                action:@selector(newGame:)
      forControlEvents:UIControlEventTouchUpInside];
-    self.makeNewGameButton.frame = CGRectMake(kGridInset, [UIScreen mainScreen].bounds.size.height - 125, [UIScreen mainScreen].bounds.size.width - kGridInset * 2, 30);
+    self.makeNewGameButton.frame = CGRectMake(kGridInset, [UIScreen mainScreen].bounds.size.height - 125, [UIScreen mainScreen].bounds.size.width - kGridInset * kTwo, 30);
     self.makeNewGameButton.layer.cornerRadius = 10;
     self.makeNewGameButton.hidden = NO;
-    [self.makeNewGameButton.layer setBorderWidth:3.0];
-    [self.makeNewGameButton.layer setBorderColor:[[UIColor blackColor] CGColor]];
-    [self.makeNewGameButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    [self.makeNewGameButton.layer setBorderWidth:kButtonBorderWidth];
+    [self.makeNewGameButton.layer setBorderColor:[self.metaGameDrawingColor CGColor]];
+    [self.makeNewGameButton setTitleColor:self.metaGameDrawingColor forState:UIControlStateNormal];
     
-    [self.makeNewGameButton setTitle:@"New Game" forState:UIControlStateNormal];
+    [self.makeNewGameButton setTitle:kNewGameButtonTitle forState:UIControlStateNormal];
     [self.view addSubview:self.makeNewGameButton];
 }
 
@@ -576,7 +614,7 @@
 //MARK: Win Method Call
 
 - (void) won:(NSNumber *)winner by:(NSString *) winningMethodString {
-    self.currentPlayerLabel.text = [kWinningPrefix stringByAppendingString:winningMethodString];
+    self.currentPlayerLabel.text = [kWinAnnouncementBeginning stringByAppendingString:winningMethodString];
     if ([winner integerValue] == O) {
         self.currentPlayerImage.image = [UIImage imageNamed:kOImageName];
     } else {
@@ -588,7 +626,7 @@
             view.userInteractionEnabled = NO;
         }
     }
-    for (int i = 0.0; i < 10.0; i += 2) {
+    for (int i = kZero; i < kFour; i += kOne) {
         dispatch_time_t startTime1 = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(i * NSEC_PER_SEC));
         dispatch_after(startTime1, dispatch_get_main_queue(), ^(void){
             [self.currentPlayerLabel setTextColor:UIColor.redColor];
@@ -639,8 +677,8 @@
 
 //MARK: Move Game View
 
-float startX = 0;
-float startY = 0;
+float startX = kZero;
+float startY = kZero;
 -(void) touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
     UITouch *touch = [[event allTouches] anyObject];
