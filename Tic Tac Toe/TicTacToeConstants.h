@@ -27,7 +27,7 @@ typedef NS_ENUM(NSUInteger, SquareStatus) {
 #define kDimensionTitle @"Dimension"
 #define kMaximumDimension 70
 #define kMinimumDimension 1
-#define kDimensionMessageString @"The dimension of this game must be an integer of two or greater and less than or equal to %d. The default of four has been entered for you."
+#define kDimensionMessageString @"The dimension of this game must be an integer of two or greater and less than or equal to %@. The default of four has been entered for you."
 #define kOK @"OK"
 #define kdrawOAnimation @"drawOAnimation"
 #define kDrawLineAnimation @"drawLineAnimation"

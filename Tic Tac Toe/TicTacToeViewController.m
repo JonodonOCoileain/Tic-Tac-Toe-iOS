@@ -105,9 +105,13 @@
     if (dimensionTextFieldStringToInt > kMinimumDimension && dimensionTextFieldStringToInt <= kMaximumDimension) {
         return dimensionTextFieldStringToInt;
     } else {
+        NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+        [formatter setNumberStyle: NSNumberFormatterSpellOutStyle];
+        NSString *maximumDimensionAsLetters = [formatter stringFromNumber:[NSNumber numberWithInt: kMaximumDimension]];
+        
         UIAlertController* alert = [UIAlertController alertControllerWithTitle:kDimensionTitle
                                                                        message:[NSString stringWithFormat:
-                                                                                kDimensionMessageString, kMaximumDimension]
+                                                                                kDimensionMessageString, maximumDimensionAsLetters]
                                                                 preferredStyle:UIAlertControllerStyleAlert];
         
         UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:kOK style:UIAlertActionStyleDefault
